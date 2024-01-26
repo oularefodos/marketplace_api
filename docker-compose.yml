@@ -4,9 +4,7 @@ services:
   postgres:
     image: postgres:13.5
     restart: always
-    environment:
-      - POSTGRES_USER=foulare
-      - POSTGRES_PASSWORD=miros1245
+    env_file: .env
     volumes:
       - postgres:/var/lib/postgresql/data
     ports:
