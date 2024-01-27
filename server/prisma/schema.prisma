@@ -9,3 +9,39 @@ datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
 }
+
+enum UserRole {
+  ADMIN
+  SUPER_ADMIN
+  USER
+}
+
+model User {
+  id          String      @id @default(uuid())
+  email       String
+  password    String
+  store       Store[]
+  role        UserRole
+}
+
+model Store {
+  id              String      @id @default(uuid())
+  name            String   @unique
+  description     String?
+  profileImgLink  String?
+  owner           User @relation(fields: [ownerId], references: [id])
+  ownerId         String
+  product         Product[]
+}
+
+model Product {
+  id            String      @id @default(uuid())
+  title         String   @unique
+  description   String?
+  imgLink       String
+  store         Store @relation(fields: [storeId], references: [id])
+  storeId       String
+  published     Boolean  @default(false)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+}
