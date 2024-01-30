@@ -21,7 +21,7 @@ model User {
   email       String
   password    String
   store       Store[]
-  role        UserRole
+  role        UserRole    @default(USER)
 }
 
 model Store {
