@@ -6,24 +6,26 @@ import * as bcryptUtils from "../../utils/passwordEncryptor";
 import { User } from "@prisma/client";
 import { v4 as uuidv4 } from "uuid";
 import { ForbiddenException } from "@nestjs/common";
+import { createPrismaMocker } from "../../utils/prismaMock";
 
 const encryptedPassword = uuidv4();
+const id: string = "60d5922d00581b8f0062e3a8";
 
 const User: CreateUserDto = {
     email: "test@gmail.com",
     password: "123456",
 };
 
-const UserResponse: User = {
+const userResponse: User = {
     id: uuidv4(),
     email: "test@gmail.com",
     role: "USER",
     password: encryptedPassword,
 };
 
-const Users: User[] = [
+const users: User[] = [
     {
-        id: uuidv4(),
+        id: "60d5922d00581b8f0062e3a8",
         email: "test0@gmail.com",
         role: "USER",
         password: encryptedPassword,
@@ -46,18 +48,7 @@ describe("UsersService", () => {
     let service: UsersService;
     let db: PrismaService;
 
-    let dbMock = {
-        user: {
-            create: jest.fn(() => UserResponse),
-            delete: jest.fn(),
-            findOne: jest.fn(),
-            findUnique: jest.fn((params) =>
-                Users.find((user) => user.email === params.where.email),
-            ),
-            findMany: jest.fn(),
-            update: jest.fn(),
-        },
-    };
+    let dbMock = createPrismaMocker(users, userResponse, 'user')
 
     beforeEach(async () => {
         const module: TestingModule = await Test.createTestingModule({
@@ -88,7 +79,7 @@ describe("UsersService", () => {
                     password: encryptedPassword,
                 },
             });
-            expect(db.user.create).toHaveReturnedWith(UserResponse);
+            expect(db.user.create).toHaveReturnedWith(userResponse);
         });
         it("should call the password Encryptor", async () => {
             await service.create(User);
@@ -120,7 +111,23 @@ describe("UsersService", () => {
         it("should return the user created", async () => {
             const response = await service.create(User);
             expect(response).toBeDefined();
-            expect(response).toEqual(UserResponse);
+            expect(response).toEqual(userResponse);
+        });
+    });
+
+    describe("findAll", () => {
+        it("hould be defined", () => {
+            expect(service.findAll).toBeDefined();
+        });
+        it("should call the function db.user.findMany", async () => {
+            await service.findAll();
+            expect(db.user.findMany).toHaveBeenCalled();
+            expect(db.user.findMany).toHaveReturnedWith(users);
+        });
+        it("shoud return Users", async () => {
+            const response = await service.findAll();
+            expect(response).toBeDefined();
+            expect(response).toEqual(users);
         });
     });
 });

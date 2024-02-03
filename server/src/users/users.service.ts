@@ -33,16 +33,19 @@ export class UsersService {
         return this.db.user.findMany();
     }
 
-    findOne(id: string) {
+    findOneById(id: string) {
         return this.db.user.findUnique({ where: { id } });
     }
 
-    update(id: number, updateUserDto: UpdateUserDto) {
-        const u = "";
-        return;
+    findOneByEmail(email : string) {
+        return this.db.user.findUnique({ where: { email } });
     }
 
-    remove(id: number) {
+    update(id: string, updateUserDto: UpdateUserDto) {
+        return ''
+    }
+
+    remove(id: string) {
         return `This action removes a #${id} user`;
     }
 }
