@@ -3,7 +3,7 @@ import { CreateUserDto } from "./dto/create-user.dto";
 import { UpdateUserDto } from "./dto/update-user.dto";
 import { PrismaService } from "../prisma/prisma.service";
 import { encryptPassword } from "../../utils/passwordEncryptor";
-import { ForbiddenException } from "@nestjs/common";
+import { ForbiddenException, NotFoundException } from "@nestjs/common";
 
 @Injectable()
 export class UsersService {
@@ -33,19 +33,28 @@ export class UsersService {
         return this.db.user.findMany();
     }
 
-    findOneById(id: string) {
-        return this.db.user.findUnique({ where: { id } });
+    async findOneById(id: string) {
+        const user = await this.db.user.findUnique({ where: { id } });
+        if (!user) {
+            throw new NotFoundException(`user not found - id ${id}`);
+        }
+        return user;
     }
 
-    findOneByEmail(email : string) {
-        return this.db.user.findUnique({ where: { email } });
+    async findOneByEmail(email : string) {
+        const user = await this.db.user.findUnique({ where: { email } });
+        if (!user) {
+            throw new NotFoundException(`user not found - id ${email}`);
+        }
+        return user;
+    }
+
+    remove(id: string) {
+        return `This action removes a #${id} user`;
     }
 
     update(id: string, updateUserDto: UpdateUserDto) {
         return ''
     }
 
-    remove(id: string) {
-        return `This action removes a #${id} user`;
-    }
 }

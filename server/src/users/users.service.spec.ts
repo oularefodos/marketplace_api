@@ -5,7 +5,7 @@ import { CreateUserDto } from "./dto/create-user.dto";
 import * as bcryptUtils from "../../utils/passwordEncryptor";
 import { User } from "@prisma/client";
 import { v4 as uuidv4 } from "uuid";
-import { ForbiddenException } from "@nestjs/common";
+import { ForbiddenException, NotFoundException } from "@nestjs/common";
 import { createPrismaMocker } from "../../utils/prismaMock";
 
 const encryptedPassword = uuidv4();
@@ -116,7 +116,7 @@ describe("UsersService", () => {
     });
 
     describe("findAll", () => {
-        it("hould be defined", () => {
+        it("should be defined", () => {
             expect(service.findAll).toBeDefined();
         });
         it("should call the function db.user.findMany", async () => {
@@ -130,4 +130,49 @@ describe("UsersService", () => {
             expect(response).toEqual(users);
         });
     });
+
+    describe("findOneById", () => {
+        it("should be defined", () => {
+            expect(service.findOneById).toBeDefined();
+        });
+        it("should call the function db.user.findUnique", async () => {
+            await service.findOneById(id);
+            expect(db.user.findUnique).toHaveBeenCalled();
+            expect(db.user.findUnique).toHaveBeenCalledWith({where : {id}});
+            expect(db.user.findUnique).toHaveReturnedWith(users[0]);
+        });
+        it("shoud return User", async () => {
+            const response = await service.findOneById(id);
+            expect(response).toBeDefined();
+            expect(response).toEqual(users[0]);
+        });
+        it("should be return null for if the user does not exist", async () => {
+            expect( async() => {
+                await service.findOneById('hello');
+            }).rejects.toThrow(NotFoundException)
+        })
+    })
+
+    describe("findOneByEmail", () => {
+        const email = "test0@gmail.com"
+        it("should be defined", () => {
+            expect(service.findOneByEmail).toBeDefined();
+        });
+        it("should call the function db.user.findUnique", async () => {
+            await service.findOneByEmail(email);
+            expect(db.user.findUnique).toHaveBeenCalled();
+            expect(db.user.findUnique).toHaveBeenCalledWith({where : {email}});
+            expect(db.user.findUnique).toHaveReturnedWith(users[0]);
+        });
+        it("shoud return User", async () => {
+            const response = await service.findOneByEmail(email);
+            expect(response).toBeDefined();
+            expect(response).toEqual(users[0]);
+        });
+        it("should return null if the user does not exist", async () => {
+            expect( async() => {
+                await service.findOneByEmail('test00000@gmail.com');
+            }).rejects.toThrow(NotFoundException)
+        })
+    })
 });
