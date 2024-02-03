@@ -1,30 +1,48 @@
-import { Injectable } from '@nestjs/common';
-import { CreateUserDto } from './dto/create-user.dto';
-import { UpdateUserDto } from './dto/update-user.dto';
-import { PrismaService } from 'src/prisma/prisma.service';
+import { Injectable } from "@nestjs/common";
+import { CreateUserDto } from "./dto/create-user.dto";
+import { UpdateUserDto } from "./dto/update-user.dto";
+import { PrismaService } from "../prisma/prisma.service";
+import { encryptPassword } from "../../utils/passwordEncryptor";
+import { ForbiddenException } from "@nestjs/common";
 
 @Injectable()
 export class UsersService {
+    constructor(private db: PrismaService) {}
 
-  constructor(private db: PrismaService) {}
+    async create(createUserDto: CreateUserDto) {
+        const { password, email } = createUserDto;
+        const existingUsser = await this.db.user.findUnique({
+            where: { email },
+        });
+        if (existingUsser) {
+            throw new ForbiddenException('This email already exists');
+        }
 
-  create(createUserDto: CreateUserDto) {
-    return this.db.user.create({data : createUserDto}); 
-  }
+        const encryptedPassword = await encryptPassword(password);
 
-  findAll() {
-    return this.db.user.findMany()
-  }
+        const user = await this.db.user.create({
+            data: {
+                email: email,
+                password: encryptedPassword,
+            },
+        });
+        return user;
+    }
 
-  findOne(id: string) {
-    return this.db.user.findUnique({where : {id}})
-  }
+    findAll() {
+        return this.db.user.findMany();
+    }
 
-  update(id: number, updateUserDto: UpdateUserDto) {
-    return
-  }
+    findOne(id: string) {
+        return this.db.user.findUnique({ where: { id } });
+    }
 
-  remove(id: number) {
-    return `This action removes a #${id} user`;
-  }
+    update(id: number, updateUserDto: UpdateUserDto) {
+        const u = "";
+        return;
+    }
+
+    remove(id: number) {
+        return `This action removes a #${id} user`;
+    }
 }
