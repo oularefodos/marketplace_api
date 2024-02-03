@@ -18,10 +18,12 @@ enum UserRole {
 
 model User {
   id          String      @id @default(uuid())
-  email       String
+  email       String      @unique
   password    String
   store       Store[]
+  user        Order[]
   role        UserRole    @default(USER)
+  rate        ProductRate[]
 }
 
 model Store {
@@ -39,9 +41,35 @@ model Product {
   title         String   @unique
   description   String?
   imgLink       String
+  price         Int
   store         Store @relation(fields: [storeId], references: [id])
   storeId       String
   published     Boolean  @default(false)
   createdAt     DateTime @default(now())
+  orders        Order[]
   updatedAt     DateTime @updatedAt
+  rate          ProductRate[]
+}
+
+model Order {
+  id          String      @id @default(uuid())
+  userId      String
+  productId   String
+  quantity    String
+  totalPrice  Float
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  product     Product @relation(fields: [productId], references: [id])
+  user        User    @relation(fields: [userId], references: [id])
+}
+
+model ProductRate {
+  id        String      @id @default(uuid())
+  productId String
+  userId    String
+  rate      Int
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  product   Product  @relation(fields: [productId], references: [id])
+  user      User     @relation(fields: [userId], references: [id])
 }
