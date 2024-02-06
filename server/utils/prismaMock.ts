@@ -49,5 +49,12 @@ export const createPrismaMocker = (
         }),
     };
     prismaMock[key] = ret;
+    prismaMock["mockClear"] = function () {
+        prismaMock[key].create.mockClear();
+        prismaMock[key].update.mockClear();
+        prismaMock[key].delete.mockClear();
+        prismaMock[key].findUnique.mockClear();
+        prismaMock[key].findMany.mockClear();
+    };
     return prismaMock;
 };
