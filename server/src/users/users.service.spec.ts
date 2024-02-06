@@ -11,7 +11,7 @@ import { createPrismaMocker } from "../../utils/prismaMock";
 const encryptedPassword = uuidv4();
 const id: string = "60d5922d00581b8f0062e3a8";
 
-const User: CreateUserDto = {
+const user: CreateUserDto = {
     email: "test@gmail.com",
     password: "123456",
 };
@@ -48,7 +48,8 @@ describe("UsersService", () => {
     let service: UsersService;
     let db: PrismaService;
 
-    let dbMock = createPrismaMocker(users, userResponse, 'user')
+    let dbMock = createPrismaMocker(users, userResponse, "user");
+    let encryptedPassMock;
 
     beforeEach(async () => {
         const module: TestingModule = await Test.createTestingModule({
@@ -60,6 +61,8 @@ describe("UsersService", () => {
 
         service = module.get<UsersService>(UsersService);
         db = module.get<PrismaService>(PrismaService);
+        dbMock.mockClear();
+        encryptedPassMock.mockClear();
     });
 
     it("should be defined", () => {
@@ -67,36 +70,36 @@ describe("UsersService", () => {
     });
 
     describe("createUser", () => {
-        jest.spyOn(bcryptUtils, "encryptPassword").mockReturnValueOnce(
-            encryptedPassword,
-        );
+        encryptedPassMock = jest
+            .spyOn(bcryptUtils, "encryptPassword")
+            .mockReturnValue(encryptedPassword);
         it("should call the function db.user.create", async () => {
-            await service.create(User);
+            await service.create(user);
             expect(db.user.create).toHaveBeenCalled();
             expect(db.user.create).toHaveBeenCalledWith({
                 data: {
-                    email: User.email,
+                    email: user.email,
                     password: encryptedPassword,
                 },
             });
             expect(db.user.create).toHaveReturnedWith(userResponse);
         });
         it("should call the password Encryptor", async () => {
-            await service.create(User);
+            await service.create(user);
             expect(bcryptUtils.encryptPassword).toHaveBeenCalled();
             expect(bcryptUtils.encryptPassword).toHaveBeenCalledWith(
-                User.password,
+                user.password,
             );
             expect(bcryptUtils.encryptPassword).toHaveReturnedWith(
                 encryptedPassword,
             );
         });
-        it("should throw an Error if the email already exits", async () => {
-            await service.create(User);
+        it("should call db.user.findUnique", async () => {
+            await service.create(user);
             expect(db.user.findUnique).toHaveBeenCalled();
             expect(db.user.findUnique).toHaveBeenCalledWith({
                 where: {
-                    email: User.email,
+                    email: user.email,
                 },
             });
         });
@@ -109,7 +112,7 @@ describe("UsersService", () => {
             }).rejects.toThrow(ForbiddenException);
         });
         it("should return the user created", async () => {
-            const response = await service.create(User);
+            const response = await service.create(user);
             expect(response).toBeDefined();
             expect(response).toEqual(userResponse);
         });
@@ -138,7 +141,7 @@ describe("UsersService", () => {
         it("should call the function db.user.findUnique", async () => {
             await service.findOneById(id);
             expect(db.user.findUnique).toHaveBeenCalled();
-            expect(db.user.findUnique).toHaveBeenCalledWith({where : {id}});
+            expect(db.user.findUnique).toHaveBeenCalledWith({ where: { id } });
             expect(db.user.findUnique).toHaveReturnedWith(users[0]);
         });
         it("shoud return User", async () => {
@@ -147,21 +150,23 @@ describe("UsersService", () => {
             expect(response).toEqual(users[0]);
         });
         it("should be return null for if the user does not exist", async () => {
-            expect( async() => {
-                await service.findOneById('hello');
-            }).rejects.toThrow(NotFoundException)
-        })
-    })
+            expect(async () => {
+                await service.findOneById("hello");
+            }).rejects.toThrow(NotFoundException);
+        });
+    });
 
     describe("findOneByEmail", () => {
-        const email = "test0@gmail.com"
+        const email = "test0@gmail.com";
         it("should be defined", () => {
             expect(service.findOneByEmail).toBeDefined();
         });
         it("should call the function db.user.findUnique", async () => {
             await service.findOneByEmail(email);
             expect(db.user.findUnique).toHaveBeenCalled();
-            expect(db.user.findUnique).toHaveBeenCalledWith({where : {email}});
+            expect(db.user.findUnique).toHaveBeenCalledWith({
+                where: { email },
+            });
             expect(db.user.findUnique).toHaveReturnedWith(users[0]);
         });
         it("shoud return User", async () => {
@@ -170,9 +175,69 @@ describe("UsersService", () => {
             expect(response).toEqual(users[0]);
         });
         it("should return null if the user does not exist", async () => {
-            expect( async() => {
-                await service.findOneByEmail('test00000@gmail.com');
-            }).rejects.toThrow(NotFoundException)
-        })
-    })
+            expect(async () => {
+                await service.findOneByEmail("test00000@gmail.com");
+            }).rejects.toThrow(NotFoundException);
+        });
+    });
+
+    describe("update", () => {
+        encryptedPassMock = jest
+            .spyOn(bcryptUtils, "encryptPassword")
+            .mockReturnValue(encryptedPassword);
+        it("should be defined", () => {
+            expect(service.update).toBeDefined();
+        });
+        it("should call the function db.user.findUnique", async () => {
+            console.log(db.user.findUnique.length);
+            await service.update(id, user);
+            expect(db.user.findUnique).toHaveBeenCalled();
+            expect(db.user.findUnique).toHaveBeenCalledWith({
+                where: { id: id },
+            });
+            expect(db.user.findUnique).toHaveReturnedWith(users[0]);
+        });
+        it("should throw an NotFundException", async () => {
+            expect(async () => {
+                await service.update("kk", user);
+            }).rejects.toThrow(NotFoundException);
+        });
+        it("should encrypt the password if it is present", async () => {
+            await service.update(id, {
+                email: "test@gmail.com",
+                password: "kkklllll",
+            });
+            expect(bcryptUtils.encryptPassword).toHaveBeenCalled();
+            expect(bcryptUtils.encryptPassword).toHaveBeenCalledWith(
+                "kkklllll",
+            );
+            expect(bcryptUtils.encryptPassword).toHaveReturnedWith(
+                encryptedPassword,
+            );
+        });
+        it("should not password encryptor if the password is undefined", async () => {
+            await service.update(id, { email: "test@gmail.com" });
+            expect(bcryptUtils.encryptPassword.length).toBe(0);
+        });
+        it("should throw if the payload is undefind", async () => {
+            expect(async () => {
+                await service.update(id, undefined);
+            }).rejects.toThrow(ForbiddenException);
+        });
+        it("should call the db.user.update", async () => {
+            await service.update(id, user);
+            expect(db.user.update).toHaveBeenCalled();
+            expect(db.user.update).toHaveBeenCalledWith({
+                where: { id },
+                data: user,
+            });
+        });
+        it("should return the same data sent", async () => {
+            const response = await service.update(id, user);
+            for (let key in user) {
+                expect(response[key]).toEqual(user[key]);
+            }
+        });
+    });
 });
+

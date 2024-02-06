@@ -15,7 +15,7 @@ export class UsersService {
             where: { email },
         });
         if (existingUsser) {
-            throw new ForbiddenException('This email already exists');
+            throw new ForbiddenException("This email already exists");
         }
 
         const encryptedPassword = await encryptPassword(password);
@@ -41,20 +41,34 @@ export class UsersService {
         return user;
     }
 
-    async findOneByEmail(email : string) {
+    async findOneByEmail(email: string) {
         const user = await this.db.user.findUnique({ where: { email } });
         if (!user) {
-            throw new NotFoundException(`user not found - id ${email}`);
+            throw new NotFoundException(`user not found - email ${email}`);
         }
         return user;
     }
 
-    remove(id: string) {
-        return `This action removes a #${id} user`;
+    async remove(id: string) {
+        return "";
     }
 
-    update(id: string, updateUserDto: UpdateUserDto) {
-        return ''
+    async update(id: string, updateUserDto: UpdateUserDto) {
+        await this.findOneById(id);
+        if (!updateUserDto) {
+            throw new ForbiddenException("forbidden input");
+        }
+        if (updateUserDto.password) {
+            updateUserDto.password = await encryptPassword(
+                updateUserDto.password,
+            );
+        }
+        const user = await this.db.user.update({
+            where: {
+                id,
+            },
+            data: updateUserDto,
+        });
+        return user;
     }
-
 }
