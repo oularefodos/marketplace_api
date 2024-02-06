@@ -50,7 +50,11 @@ export class UsersService {
     }
 
     async remove(id: string) {
-        return "";
+        await this.findOneById(id);
+        const user = await this.db.user.delete({
+            where: { id },
+        });
+        return user;
     }
 
     async update(id: string, updateUserDto: UpdateUserDto) {

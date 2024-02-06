@@ -49,7 +49,6 @@ describe("UsersService", () => {
     let db: PrismaService;
 
     let dbMock = createPrismaMocker(users, userResponse, "user");
-    let encryptedPassMock;
 
     beforeEach(async () => {
         const module: TestingModule = await Test.createTestingModule({
@@ -62,6 +61,9 @@ describe("UsersService", () => {
         service = module.get<UsersService>(UsersService);
         db = module.get<PrismaService>(PrismaService);
         dbMock.mockClear();
+        const encryptedPassMock = jest
+            .spyOn(bcryptUtils, "encryptPassword")
+            .mockReturnValue(encryptedPassword);
         encryptedPassMock.mockClear();
     });
 
@@ -70,9 +72,6 @@ describe("UsersService", () => {
     });
 
     describe("createUser", () => {
-        encryptedPassMock = jest
-            .spyOn(bcryptUtils, "encryptPassword")
-            .mockReturnValue(encryptedPassword);
         it("should call the function db.user.create", async () => {
             await service.create(user);
             expect(db.user.create).toHaveBeenCalled();
@@ -182,14 +181,10 @@ describe("UsersService", () => {
     });
 
     describe("update", () => {
-        encryptedPassMock = jest
-            .spyOn(bcryptUtils, "encryptPassword")
-            .mockReturnValue(encryptedPassword);
         it("should be defined", () => {
             expect(service.update).toBeDefined();
         });
         it("should call the function db.user.findUnique", async () => {
-            console.log(db.user.findUnique.length);
             await service.update(id, user);
             expect(db.user.findUnique).toHaveBeenCalled();
             expect(db.user.findUnique).toHaveBeenCalledWith({
@@ -237,6 +232,37 @@ describe("UsersService", () => {
             for (let key in user) {
                 expect(response[key]).toEqual(user[key]);
             }
+        });
+    });
+
+    describe("remove", () => {
+        it("sould be defined", () => {
+            expect(service.remove).toBeDefined();
+        });
+        it("should call findUnique", async () => {
+            await service.remove(id);
+            expect(db.user.findUnique).toHaveBeenCalled();
+            expect(db.user.findUnique).toHaveBeenCalledWith({
+                where: { id: id },
+            });
+            expect(db.user.findUnique).toHaveReturnedWith(users[0]);
+        });
+        it("should call db.user.delete", async () => {
+            await service.remove(id);
+            expect(db.user.delete).toHaveBeenCalled();
+            expect(db.user.delete).toHaveBeenCalledWith({
+                where: { id: id },
+            });
+            expect(db.user.delete).toHaveReturnedWith(users[0]);
+        });
+        it("should return the user deleted", async () => {
+            const response = await service.remove(id);
+            expect(response.id).toBe(id);
+        });
+        it("should throw an error if the index does not exist", async () => {
+            expect(async () => {
+                await service.remove("lll");
+            }).rejects.toThrow(NotFoundException);
         });
     });
 });
